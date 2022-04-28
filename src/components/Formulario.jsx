@@ -1,6 +1,8 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import useSelectMonedas from '../hooks/useSelectMonedas';
+import {monedas} from './data/monedas'
+import Error from './Error';
 const InputSubmit = styled.input`
     background-color: #9497FF;
     border: none;
@@ -18,23 +20,50 @@ const InputSubmit = styled.input`
         cursor: pointer;
     }
 `
-const Formulario = () => {
-    const monedas = [
-        { id: 'USD',nombre:'Dolar de Estados Unidos' },
-        { id: 'MXN',nombre:'Peso Mexicano' },
-        { id: 'EUR',nombre:'Euro' },
-        { id: 'GBP',nombre:'Libra Esterlina' },
-        { id: 'ARG',nombre:'Peso Argentino' },
+const Formulario = ({ setMonedas }) => {
 
-    ]
+  
+    const [cripto, setCriptos] = useState([])
+    const [error, setError] = useState(false)
 
-    const [SelectMonedas] = useSelectMonedas('Elige tu moneda',monedas)
-
+    const [moneda, SelectMonedas] = useSelectMonedas('Elige tu moneda', monedas)
+    const [criptomoneda, SelectCriptomoneda] = useSelectMonedas('Elige tu Criptomoneda', cripto)
+    //una sola vez[] vacio
+    useEffect(() => {
+        const consultarAPI = async () => {
+            const url = "https://min-api.cryptocompare.com/data/top/mktcapfull?limit=10&tsym=USD"
+            //bloquear porque no sabemos el tiempo que demore
+            const respuesta = await fetch(url)
+            const resultado = await respuesta.json()
+            //arreglo con los datos de las 10 crypto creado con map
+            const arrayCripto = resultado.Data.map(cripto => {
+                const objeto = {
+                    id: cripto.CoinInfo.Name,
+                    nombre: cripto.CoinInfo.FullName
+                }
+                return objeto;
+            })
+            setCriptos(arrayCripto)
+        }
+        consultarAPI()
+    }, [])
+    const hadleSubmit = (e) => {
+        e.preventDefault()
+        if ([moneda, criptomoneda].includes('')) {
+            setError(true)
+            return
+        } setError(false)
+        setMonedas({moneda, criptomoneda})
+    }
     return (
-        <form>
-            <SelectMonedas />
-            <InputSubmit type="submit" value="cotizar" />
-        </form>
+        <>
+            {error && <Error>Todos los campos son obligatorios</Error>}
+            <form onSubmit={hadleSubmit}>
+                <SelectMonedas />
+                <SelectCriptomoneda />
+                <InputSubmit type="submit" value="cotizar" />
+            </form>
+        </>
     );
 };
 
